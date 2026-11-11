@@ -1,0 +1,134 @@
+[package]
+name = "nvm"
+group = "org.vibevm.nvm"
+kind = "app"
+# The **template revision**: this package's own version, bumped whenever the
+# shim changes or a version row is added. It is never an nvm version — the
+# nvm versions this template produces are `[template.versions]` below.
+version = "1.0.0"
+epoch = 1
+format = "normal"
+template = true
+authors = ["Oleg Chirukhin"]
+license = "UPL-1.0"
+description = "nvm, on vibe: a sourced shell function carrying nvm's whole command surface — every command, every flag, nvm's own alias store, version categories, colours and diagnostics — translated onto vibe commands"
+keywords = ["nvm", "node", "nodejs", "version-manager", "shim", "shell"]
+homepage = "https://github.com/nvm-sh/nvm"
+
+[compatibility]
+# 1.0.12 is the release that carries PROP-075 `#TEMPLATE-NO-DIGEST` — a
+# template whose produced versions download nothing declares no
+# `[template.digests]` — which is the one rule this package needs and the
+# reason the floor is where it is. An older vibe requires that table and
+# would refuse this manifest outright.
+min_vibe_version = "1.0.12"
+requires_kinds = []
+
+[application]
+id = "nvm"
+keywords = ["nvm", "node", "version-manager"]
+
+# nvm's own versions, one row per nvm release this template can produce. The
+# version a user installs is an **nvm** version, which is what `nvm --version`
+# answers; the template revision above is what `nvm --vibenvm-version` answers.
+#
+# Adding 0.41.x is four steps in this order, and never three: re-pin the
+# differential conformance suite to the new tag, prove the suite passes
+# against it, add the row here, bump the template revision. A row whose
+# behaviour nothing proved is a claim, not a version.
+[template.versions]
+kind = "list"
+
+[[template.versions.item]]
+version = "0.41.0"
+
+# **No `[template.digests]`, deliberately.** The versions this template
+# produces download nothing: the payload is `nvm.sh`, which this package
+# carries, placed by the `kind = "copy"` step of each option below out of the
+# rendered tree. A template that declares no digest source may name no digest
+# variable anywhere, and this manifest names none (PROP-075
+# `#TEMPLATE-NO-DIGEST`).
+
+# No `path_dirs` and no launchers, deliberately: this package publishes a
+# file to **source**, not a program to run. `nvm use` changes the current
+# shell, which a child process cannot do, so the only installation this
+# package needs is the script sitting where a shell can read it.
+
+[[installer_options]]
+id = "posix-x64"
+name = "nvm {version}"
+platform = "linux"
+platform_name = "Linux (glibc)"
+arch = "x86_64"
+arch_name = "Intel/AMD 64-bit"
+
+[[installer_options.steps]]
+id = "shim"
+title = "Place nvm.sh where a shell can source it"
+kind = "copy"
+from = "nvm.sh"
+to = "nvm.sh"
+
+
+[[installer_options]]
+id = "posix-arm64"
+name = "nvm {version}"
+platform = "linux"
+platform_name = "Linux (glibc)"
+arch = "aarch64"
+arch_name = "ARM 64-bit"
+
+[[installer_options.steps]]
+id = "shim"
+title = "Place nvm.sh where a shell can source it"
+kind = "copy"
+from = "nvm.sh"
+to = "nvm.sh"
+
+
+[[installer_options]]
+id = "musl-x64"
+name = "nvm {version}"
+platform = "linux-musl"
+platform_name = "Linux (musl: Alpine and others)"
+arch = "x86_64"
+arch_name = "Intel/AMD 64-bit"
+
+[[installer_options.steps]]
+id = "shim"
+title = "Place nvm.sh where a shell can source it"
+kind = "copy"
+from = "nvm.sh"
+to = "nvm.sh"
+
+
+[[installer_options]]
+id = "macos-x64"
+name = "nvm {version}"
+platform = "macos"
+platform_name = "macOS"
+arch = "x86_64"
+arch_name = "Intel 64-bit"
+
+[[installer_options.steps]]
+id = "shim"
+title = "Place nvm.sh where a shell can source it"
+kind = "copy"
+from = "nvm.sh"
+to = "nvm.sh"
+
+
+[[installer_options]]
+id = "macos-arm64"
+name = "nvm {version}"
+platform = "macos"
+platform_name = "macOS"
+arch = "aarch64"
+arch_name = "Apple silicon"
+
+[[installer_options.steps]]
+id = "shim"
+title = "Place nvm.sh where a shell can source it"
+kind = "copy"
+from = "nvm.sh"
+to = "nvm.sh"
