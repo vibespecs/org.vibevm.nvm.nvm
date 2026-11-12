@@ -49,7 +49,7 @@
 # `org.vibevm.nvm/nvm`, bumped with every revision of this file. It is what
 # `nvm --vibenvm-version` prints and what `nvm debug` reports, and it is
 # never what `nvm --version` prints.
-VIBENVM_REVISION='1.0.0'
+VIBENVM_REVISION='1.0.1'
 # The nvm release whose surface this file carries, baked in as the fallback
 # for the derivation in the plumbing below — which is what `nvm --version`
 # actually prints, as nvm's own `--version` prints an nvm version.
@@ -172,6 +172,30 @@ __vibenvm_requirement() {
             return 1
             ;;
     esac
+    # **A named user alias is a spelling too.** nvm resolves one here and
+    # then resolves what it points at — `nvm_resolve_local_alias` follows
+    # the chain and, unless the result is an **exactly** installed
+    # version, hands it to `nvm_version` (nvm.sh 2143-2167). So an alias
+    # naming a partial version selects what that partial selects: with
+    # v22.9.0 installed, `nvm alias work 22` then `nvm use work` uses
+    # v22.9.0, which is what real nvm v0.41.0 does and what this table
+    # must do, or every verb that takes a version refuses a perfectly
+    # good alias.
+    #
+    # The recursion terminates because `__vibenvm_resolve_alias` only
+    # reads the store: what it returns is a version spelling, never
+    # another alias name, so the second pass cannot reach this branch.
+    if [ -f "$(__vibenvm_alias_path)/$__vibenvm_req_value" ]; then
+        __vibenvm_req_alias="$(__vibenvm_resolve_alias "$__vibenvm_req_value" 2>/dev/null)"
+        case "$__vibenvm_req_alias" in
+            '' | '∞') ;;
+            "$__vibenvm_req_value") ;;
+            *)
+                __vibenvm_requirement "$__vibenvm_req_alias"
+                return $?
+                ;;
+        esac
+    fi
     # A bare numeric pattern is nvm's prefix match, which is a semver
     # requirement with as many fields as the user typed.
     case "$__vibenvm_req_value" in
@@ -216,7 +240,7 @@ __vibenvm_installed_version() {
 # downloaded (`--plan-only`).
 __vibenvm_remote_version() {
     __vibenvm_rv="$(__vibenvm_vibe install -g "$VIBENVM_PACKAGE@$1" --plan-only --json 2>/dev/null |
-        sed -n 's/^ *"version": "\(.*\)",\?$/\1/p' |
+        sed -n 's/^[[:space:]]*"version": "\([^"]*\)".*$/\1/p' |
         head -1)"
     [ -n "$__vibenvm_rv" ] || return 0
     __vibenvm_is_version_selected "v$__vibenvm_rv" || return 0
@@ -3209,7 +3233,21 @@ nvm() {
             # selects. `vibe app versions` takes the pattern with the same
             # prefix rule, so the spelling is handed over as the user wrote
             # it and this file does no matching of its own.
-            listing="$(__vibenvm_installed_versions "$pattern" |
+            # A named alias is a pattern too: `nvm ls work` lists what
+            # `work` resolves to, because nvm resolves the pattern before
+            # it matches (`nvm_ls` → `nvm_resolve_local_alias`). Only a
+            # name the store actually holds is translated — every other
+            # spelling is handed over as the user wrote it, so this file
+            # still does no matching of its own.
+            __vibenvm_ls_pattern="$pattern"
+            if [ -n "$pattern" ] && [ -f "$(__vibenvm_alias_path)/$pattern" ]; then
+                __vibenvm_ls_resolved="$(__vibenvm_resolve_local_alias "$pattern" 2>/dev/null)"
+                case "$__vibenvm_ls_resolved" in
+                    '' | 'N/A' | '∞') ;;
+                    *) __vibenvm_ls_pattern="${__vibenvm_ls_resolved#v}" ;;
+                esac
+            fi
+            listing="$(__vibenvm_installed_versions "$__vibenvm_ls_pattern" |
                 __vibenvm_filter_installed_versions)" || return $?
             if [ -z "$pattern" ] && [ -n "$(__vibenvm_system_node)" ]; then
                 # nvm's own last row: the node a shell finds with the slot

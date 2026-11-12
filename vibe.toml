@@ -5,7 +5,7 @@ kind = "app"
 # The **template revision**: this package's own version, bumped whenever the
 # shim changes or a version row is added. It is never an nvm version — the
 # nvm versions this template produces are `[template.versions]` below.
-version = "1.0.0"
+version = "1.0.1"
 epoch = 1
 format = "normal"
 template = true
